@@ -37,6 +37,8 @@ export default function App() {
   );
 }
 
+/* ---------------- Result card (robust result extraction) ---------------- */
+
 function ResultCard({
   jobId,
   kind,
@@ -49,25 +51,46 @@ function ResultCard({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // Extract a URL from many possible payload shapes
+  function pickUrl(r: any): string | null {
+    const val = (v: any): string | null =>
+      typeof v === "string" ? v : v?.url ?? null;
+
+    return (
+      // flat
+      val(r?.raw) ??
+      val(r?.min) ??
+      val(r?.results?.raw) ??
+      val(r?.results?.min) ??
+      // payload
+      val(r?.payload?.raw) ??
+      val(r?.payload?.min) ??
+      val(r?.payload?.results?.raw) ??
+      val(r?.payload?.results?.min) ??
+      // payload.jobs[0]
+      val(r?.payload?.jobs?.[0]?.results?.raw) ??
+      val(r?.payload?.jobs?.[0]?.results?.min) ??
+      // payload.payload.jobs[0]
+      val(r?.payload?.payload?.jobs?.[0]?.results?.raw) ??
+      val(r?.payload?.payload?.jobs?.[0]?.results?.min) ??
+      // top-level jobs
+      val(r?.jobs?.[0]?.results?.raw) ??
+      val(r?.jobs?.[0]?.results?.min) ??
+      null
+    );
+  }
+
   async function fetchResult() {
     try {
       setBusy(true);
       setErr(null);
       const r = await getJobResult(jobId);
+      const url = pickUrl(r);
 
-      // Normalize common result shapes across models
-      const jobs =
-        r?.payload?.jobs ?? r?.payload?.payload?.jobs ?? r?.jobs ?? [];
-      const first = jobs?.[0];
-      const results = first?.results || {};
-      const raw = results?.raw || results?.min || null;
-
-      const url =
-        (raw?.url as string | undefined) ??
-        (raw?.image_url as string | undefined) ??
-        null;
-
-      if (!url) throw new Error("Result URL not ready yet. Try again shortly.");
+      if (!url) {
+        console.debug("Result not ready or unknown shape:", r);
+        throw new Error("Result URL not ready yet. Try again shortly.");
+      }
       setFinalUrl(url);
     } catch (e: any) {
       setErr(e?.message ?? "Failed to fetch result.");
@@ -76,7 +99,7 @@ function ResultCard({
     }
   }
 
-  // Auto-fetch the instant the job completes
+  // Auto-fetch as soon as job completes
   useEffect(() => {
     if (status === "completed" && !finalUrl && !busy) {
       fetchResult();
@@ -84,7 +107,7 @@ function ResultCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
-  const notReady = status !== "completed";
+  const waiting = status !== "completed";
 
   return (
     <div className="mt-6 rounded-2xl border border-white/10 p-4">
@@ -100,20 +123,19 @@ function ResultCard({
       <div className="mt-3 flex items-center gap-3">
         <button
           onClick={fetchResult}
-          disabled={notReady || busy}
+          disabled={waiting || busy}
+          className={`rounded-xl px-4 py-2 font-semibold transition ${
+            waiting || busy
+              ? "bg-white/10 border border-white/15 cursor-not-allowed"
+              : "bg-brand-accent text-brand-main shadow-glow hover:scale-[1.02]"
+          }`}
           title={
-            notReady
+            waiting
               ? "Still running… will fetch automatically when ready"
               : "Fetch result"
           }
-          className={`rounded-xl px-4 py-2 font-semibold transition
-            ${
-              notReady || busy
-                ? "bg-white/10 border border-white/15 cursor-not-allowed"
-                : "bg-brand-accent text-brand-main shadow-glow hover:scale-[1.02]"
-            }`}
         >
-          {busy ? "Fetching…" : notReady ? "Waiting…" : "Fetch Result"}
+          {busy ? "Fetching…" : waiting ? "Waiting…" : "Fetch Result"}
         </button>
 
         {err && <div className="text-red-400 text-sm">{err}</div>}
@@ -136,6 +158,8 @@ function ResultCard({
     </div>
   );
 }
+
+/* ------------------------------ T2I ------------------------------ */
 
 function T2ISection() {
   const [prompt, setPrompt] = useState(
@@ -194,6 +218,8 @@ function T2ISection() {
     </section>
   );
 }
+
+/* ------------------------------ T2V ------------------------------ */
 
 function T2VSection() {
   const [prompt, setPrompt] = useState("Monkey dancing");
@@ -277,6 +303,8 @@ function T2VSection() {
     </section>
   );
 }
+
+/* ------------------------------ I2V ------------------------------ */
 
 function I2VSection() {
   const [mode, setMode] = useState<"url" | "file">("url");
