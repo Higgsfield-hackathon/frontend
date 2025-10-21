@@ -1,417 +1,212 @@
-import { useEffect, useState } from "react";
-import { t2i, t2v, i2vUrl, i2vFile, getJobResult } from "./lib/api";
-import { usePollJob } from "./hooks/usePollJob";
+import { useState } from "react";
 
-type Tab = "t2i" | "t2v" | "i2v";
+type TopAction = "A" | "B";
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("t2i");
-
   return (
-    <div className="min-h-screen bg-brand-main text-brand-additional p-6">
-      <header className="max-w-6xl mx-auto flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Higgsfield <span className="text-brand-accent">Demo</span>
-        </h1>
-        <nav className="flex gap-2">
-          {(["t2i", "t2v", "i2v"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-xl border border-white/10 hover:border-brand-accent/60 transition ${
-                tab === t ? "bg-brand-accent text-brand-main shadow-glow" : ""
-              }`}
-            >
-              {t.toUpperCase()}
-            </button>
-          ))}
-        </nav>
-      </header>
-
-      <main className="max-w-6xl mx-auto mt-8">
-        {tab === "t2i" && <T2ISection />}
-        {tab === "t2v" && <T2VSection />}
-        {tab === "i2v" && <I2VSection />}
-      </main>
+    <div className="min-h-screen bg-brand-main text-brand-additional grid place-items-center p-3 sm:p-6">
+      <Shell />
     </div>
   );
 }
 
-/* ---------------- Result card (robust result extraction) ---------------- */
+function Shell() {
+  const [activeTop, setActiveTop] = useState<TopAction>("A");
 
-function ResultCard({
-  jobId,
-  kind,
+  return (
+    <div className="w-full max-w-[1400px] grid grid-cols-[78px,minmax(0,1fr)] gap-4 sm:gap-6">
+      {/* LEFT RAIL */}
+      <aside className="flex flex-col gap-3">
+        {/* Logo + name */}
+        <div className="glass rounded-[18px] h-[72px] flex items-center justify-center">
+          <LogoMark />
+        </div>
+
+        {/* Nav cluster */}
+        <div className="glass rounded-[18px] py-3 flex flex-col items-center gap-2">
+          <RailBtn icon="home" />
+          <RailBtn icon="star" />
+          <RailBtn icon="pin" />
+          <div className="h-px w-7 bg-white/10 my-1" />
+          {/* Large round action */}
+          <button
+            className="size-11 rounded-full bg-brand-accent text-brand-main font-bold shadow-glow hover:scale-105 transition"
+            aria-label="Primary action"
+          >
+            +
+          </button>
+        </div>
+
+        {/* Secondary stack */}
+        <div className="glass rounded-[18px] py-3 flex flex-col items-center gap-2 flex-1">
+          <RailBtn icon="user" />
+          <RailBtn icon="gear" />
+          <RailBtn icon="help" />
+        </div>
+      </aside>
+
+      {/* CENTER CANVAS */}
+      <section className="relative">
+        {/* BIG rounded canvas with notch cut */}
+        <div className="relative rounded-[32px] bg-[#A9A9AF]/55 canvas-tex overflow-hidden">
+          {/* top sculpted corners illusion */}
+          <div className="absolute inset-x-0 -top-6 h-10 pointer-events-none [mask-image:linear-gradient(to_bottom,black,transparent)]">
+            {/* nothing needed; just spacing for notch */}
+          </div>
+
+          {/* Notch (dynamic island) */}
+          <div className="absolute left-1/2 -top-4 -translate-x-1/2">
+            <div className="pill px-2 py-1 flex items-center gap-2">
+              <button
+                onClick={() => setActiveTop("A")}
+                className={`px-3 py-1 rounded-full text-xs ${
+                  activeTop === "A"
+                    ? "bg-brand-accent text-brand-main"
+                    : "text-white/80"
+                }`}
+              >
+                A
+              </button>
+              <button
+                onClick={() => setActiveTop("B")}
+                className={`px-3 py-1 rounded-full text-xs ${
+                  activeTop === "B"
+                    ? "bg-brand-accent text-brand-main"
+                    : "text-white/80"
+                }`}
+              >
+                B
+              </button>
+            </div>
+          </div>
+
+          {/* Top-right toolbar inside canvas */}
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <CanvasPill>Docs</CanvasPill>
+            <CanvasPill>Models</CanvasPill>
+            <CanvasPill variant="accent">Sign up →</CanvasPill>
+          </div>
+
+          {/* Bottom-left tiny user chip */}
+          <div className="absolute left-5 bottom-5">
+            <div className="pill px-3 py-1.5 text-xs flex items-center gap-2">
+              <div className="size-4 rounded-full bg-white/30" />
+              <span>@Hi-Geek</span>
+            </div>
+          </div>
+
+          {/* Bottom-right info card with pads */}
+          <div className="absolute right-4 bottom-4">
+            <div className="relative">
+              {/* bubble */}
+              <div className="rounded-[24px] glass px-5 py-4 max-w-[320px]">
+                <h3 className="text-[11px] tracking-[.12em] font-semibold">
+                  UNLEASH THE POWER OF
+                  <br />
+                  PRECISION GAMING
+                </h3>
+                <p className="mt-1 text-xs opacity-80">
+                  Next-gen controller designed for total immersion.
+                </p>
+
+                {/* 3 ghost pads */}
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="pad size-8" />
+                  <div className="pad size-8" />
+                  <div className="pad size-8" />
+                </div>
+              </div>
+
+              {/* chevron button overlapping */}
+              <button
+                className="absolute -left-3 -bottom-3 size-10 rounded-full bg-brand-main border border-white/15 grid place-items-center"
+                aria-label="Go"
+              >
+                <ArrowIcon />
+              </button>
+            </div>
+          </div>
+
+          {/* Aspect spacer */}
+          <div className="pt-[52%]" />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* --- tiny components --- */
+
+function CanvasPill({
+  children,
+  variant,
 }: {
-  jobId: string;
-  kind: "image" | "video";
+  children: React.ReactNode;
+  variant?: "accent";
 }) {
-  const { status } = usePollJob(jobId);
-  const [finalUrl, setFinalUrl] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  // Extract a URL from many possible payload shapes
-  function pickUrl(r: any): string | null {
-    const val = (v: any): string | null =>
-      typeof v === "string" ? v : v?.url ?? null;
-
+  if (variant === "accent") {
     return (
-      // flat
-      val(r?.raw) ??
-      val(r?.min) ??
-      val(r?.results?.raw) ??
-      val(r?.results?.min) ??
-      // payload
-      val(r?.payload?.raw) ??
-      val(r?.payload?.min) ??
-      val(r?.payload?.results?.raw) ??
-      val(r?.payload?.results?.min) ??
-      // payload.jobs[0]
-      val(r?.payload?.jobs?.[0]?.results?.raw) ??
-      val(r?.payload?.jobs?.[0]?.results?.min) ??
-      // payload.payload.jobs[0]
-      val(r?.payload?.payload?.jobs?.[0]?.results?.raw) ??
-      val(r?.payload?.payload?.jobs?.[0]?.results?.min) ??
-      // top-level jobs
-      val(r?.jobs?.[0]?.results?.raw) ??
-      val(r?.jobs?.[0]?.results?.min) ??
-      null
+      <button className="pill bg-brand-accent text-brand-main shadow-glow px-4 py-1.5 text-xs font-semibold hover:scale-[1.02] transition">
+        {children}
+      </button>
     );
   }
-
-  async function fetchResult() {
-    try {
-      setBusy(true);
-      setErr(null);
-      const r = await getJobResult(jobId);
-      const url = pickUrl(r);
-
-      if (!url) {
-        console.debug("Result not ready or unknown shape:", r);
-        throw new Error("Result URL not ready yet. Try again shortly.");
-      }
-      setFinalUrl(url);
-    } catch (e: any) {
-      setErr(e?.message ?? "Failed to fetch result.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // Auto-fetch as soon as job completes
-  useEffect(() => {
-    if (status === "completed" && !finalUrl && !busy) {
-      fetchResult();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
-
-  const waiting = status !== "completed";
-
   return (
-    <div className="mt-6 rounded-2xl border border-white/10 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-sm truncate">
-          Job: <code className="opacity-80">{jobId}</code>
-        </div>
-        <div className="text-sm">
-          Status: <span className="text-brand-accent">{status}</span>
-        </div>
-      </div>
+    <button className="pill px-4 py-1.5 text-xs hover:border-white/25 transition">
+      {children}
+    </button>
+  );
+}
 
-      <div className="mt-3 flex items-center gap-3">
-        <button
-          onClick={fetchResult}
-          disabled={waiting || busy}
-          className={`rounded-xl px-4 py-2 font-semibold transition ${
-            waiting || busy
-              ? "bg-white/10 border border-white/15 cursor-not-allowed"
-              : "bg-brand-accent text-brand-main shadow-glow hover:scale-[1.02]"
-          }`}
-          title={
-            waiting
-              ? "Still running… will fetch automatically when ready"
-              : "Fetch result"
-          }
-        >
-          {busy ? "Fetching…" : waiting ? "Waiting…" : "Fetch Result"}
-        </button>
+function RailBtn({
+  icon,
+}: {
+  icon: "home" | "star" | "pin" | "user" | "gear" | "help";
+}) {
+  return (
+    <button
+      className="size-10 rounded-xl hover:bg-white/10 grid place-items-center transition"
+      aria-label={icon}
+      title={icon}
+    >
+      <DotIcon />
+    </button>
+  );
+}
 
-        {err && <div className="text-red-400 text-sm">{err}</div>}
-      </div>
-
-      {finalUrl && kind === "image" && (
-        <div className="mt-4">
-          <img
-            src={finalUrl}
-            alt="result"
-            className="rounded-xl max-h-[480px]"
-          />
-        </div>
-      )}
-      {finalUrl && kind === "video" && (
-        <div className="mt-4">
-          <video src={finalUrl} className="rounded-xl max-h-[480px]" controls />
-        </div>
-      )}
+function LogoMark() {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="size-8 rounded-full bg-brand-accent shadow-glow" />
+      <span className="font-semibold tracking-tight">Higgsfield</span>
     </div>
   );
 }
 
-/* ------------------------------ T2I ------------------------------ */
-
-function T2ISection() {
-  const [prompt, setPrompt] = useState(
-    "monkey wearing sunglasses, studio lighting"
-  );
-  const [ar, setAr] = useState("4:3");
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const res = await t2i(prompt, ar);
-      setJobId(res.id);
-    } catch (e: any) {
-      alert(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
+function DotIcon() {
   return (
-    <section>
-      <h2 className="text-xl font-semibold">Text → Image</h2>
-      <form
-        onSubmit={onSubmit}
-        className="mt-4 grid gap-3 sm:grid-cols-[1fr,200px,140px]"
-      >
-        <input
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Prompt"
-          className="rounded-xl bg-black/40 border border-white/15 px-4 py-3 outline-none focus:border-brand-accent/60"
-        />
-        <select
-          value={ar}
-          onChange={(e) => setAr(e.target.value)}
-          className="rounded-xl bg-black/40 border border-white/15 px-4 py-3"
-        >
-          {["1:1", "4:3", "16:9", "9:16"].map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-        <button
-          disabled={busy}
-          className="rounded-xl bg-brand-accent text-brand-main font-semibold shadow-glow px-4 py-3"
-        >
-          {busy ? "Submitting..." : "Generate"}
-        </button>
-      </form>
-
-      {jobId && <ResultCard jobId={jobId} kind="image" />}
-    </section>
+    <svg width="18" height="18" viewBox="0 0 24 24" className="opacity-80">
+      <circle cx="12" cy="12" r="3" fill="currentColor" />
+    </svg>
   );
 }
 
-/* ------------------------------ T2V ------------------------------ */
-
-function T2VSection() {
-  const [prompt, setPrompt] = useState("Monkey dancing");
-  const [duration, setDuration] = useState(5);
-  const [ar, setAr] = useState("16:9");
-  const [resolution, setResolution] = useState("720");
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const res = await t2v({
-        prompt,
-        duration,
-        resolution,
-        aspect_ratio: ar,
-        camera_fixed: false,
-      });
-      setJobId(res.id);
-    } catch (e: any) {
-      alert(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
+function ArrowIcon() {
   return (
-    <section>
-      <h2 className="text-xl font-semibold">Text → Video</h2>
-      <form
-        onSubmit={onSubmit}
-        className="mt-4 grid gap-3 sm:grid-cols-[1fr,120px,140px,140px,140px]"
-      >
-        <input
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          className="rounded-xl bg-black/40 border border-white/15 px-4 py-3"
-        />
-        <input
-          type="number"
-          min={1}
-          max={10}
-          value={duration}
-          onChange={(e) => setDuration(parseInt(e.target.value))}
-          className="rounded-xl bg-black/40 border border-white/15 px-4 py-3"
-          placeholder="Duration"
-        />
-        <select
-          value={resolution}
-          onChange={(e) => setResolution(e.target.value)}
-          className="rounded-xl bg-black/40 border border-white/15 px-4 py-3"
-        >
-          {["480", "720", "1080"].map((r) => (
-            <option key={r} value={r}>
-              {r}p
-            </option>
-          ))}
-        </select>
-        <select
-          value={ar}
-          onChange={(e) => setAr(e.target.value)}
-          className="rounded-xl bg-black/40 border border-white/15 px-4 py-3"
-        >
-          {["16:9", "9:16", "1:1"].map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-        <button
-          disabled={busy}
-          className="rounded-xl bg-brand-accent text-brand-main font-semibold shadow-glow px-4 py-3"
-        >
-          {busy ? "Submitting..." : "Generate"}
-        </button>
-      </form>
-
-      {jobId && <ResultCard jobId={jobId} kind="video" />}
-    </section>
-  );
-}
-
-/* ------------------------------ I2V ------------------------------ */
-
-function I2VSection() {
-  const [mode, setMode] = useState<"url" | "file">("url");
-  const [imageUrl, setImageUrl] = useState(
-    "https://picsum.photos/seed/cat/800/600"
-  );
-  const [file, setFile] = useState<File | null>(null);
-  const [prompt, setPrompt] = useState("Cat watches with wet eyes...");
-  const [duration, setDuration] = useState(5);
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const res =
-        mode === "url"
-          ? await i2vUrl({
-              image_url: imageUrl,
-              prompt,
-              duration,
-              enhance_prompt: true,
-            })
-          : file
-          ? await i2vFile(file, { prompt, duration, enhance_prompt: true })
-          : (() => {
-              throw new Error("File required");
-            })();
-      setJobId(res.id);
-    } catch (e: any) {
-      alert(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section>
-      <h2 className="text-xl font-semibold">Image → Video</h2>
-
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => setMode("url")}
-          className={`px-3 py-2 rounded-md border ${
-            mode === "url"
-              ? "bg-brand-accent text-brand-main shadow-glow"
-              : "border-white/15"
-          }`}
-        >
-          URL
-        </button>
-        <button
-          onClick={() => setMode("file")}
-          className={`px-3 py-2 rounded-md border ${
-            mode === "file"
-              ? "bg-brand-accent text-brand-main shadow-glow"
-              : "border-white/15"
-          }`}
-        >
-          File
-        </button>
-      </div>
-
-      <form
-        onSubmit={onSubmit}
-        className="mt-4 grid gap-3 sm:grid-cols-[1fr,140px]"
-      >
-        {mode === "url" ? (
-          <input
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://..."
-            className="rounded-xl bg-black/40 border border-white/15 px-4 py-3"
-          />
-        ) : (
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="rounded-xl bg-black/40 border border-white/15 px-4 py-3"
-          />
-        )}
-
-        <input
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Prompt (optional)"
-          className="rounded-xl bg-black/40 border border-white/15 px-4 py-3 sm:col-span-2"
-        />
-        <input
-          type="number"
-          min={1}
-          max={10}
-          value={duration}
-          onChange={(e) => setDuration(parseInt(e.target.value))}
-          className="rounded-xl bg-black/40 border border-white/15 px-4 py-3"
-        />
-        <button
-          disabled={busy}
-          className="rounded-xl bg-brand-accent text-brand-main font-semibold shadow-glow px-4 py-3"
-        >
-          {busy ? "Submitting..." : "Generate"}
-        </button>
-      </form>
-
-      {jobId && <ResultCard jobId={jobId} kind="video" />}
-    </section>
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      className="text-brand-accent"
+    >
+      <path
+        d="M7 17l7-7M14 10h-5m5 0v5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
   );
 }
